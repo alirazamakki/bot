@@ -1,6 +1,7 @@
 # === FILE: app/selection_logic.py ===
 import random
-from .models import Poster, Caption
+from datetime import datetime
+from .models import Poster, Caption, Link
 
 
 def _parse_tags(raw_tags: str) -> set:
@@ -59,3 +60,52 @@ def choose_caption_for_group(session, used_caption_ids=None, caption_tags_filter
     if unused:
         return random.choice(unused)
     return random.choice(captions)
+
+
+def choose_link_weighted(session, link_tags_filter=None):
+    """Choose a link using weight-based random selection.
+    link_tags_filter: optional set of tags to match.
+    """
+    links = session.query(Link).all()
+    if not links:
+        return None
+
+    pool = links
+    if link_tags_filter:
+        filter_tags = {t.strip().lower() for t in link_tags_filter}
+        filtered = []
+        for link in links:
+            link_tags = _parse_tags(link.tags)
+            if link_tags & filter_tags:
+                filtered.append(link)
+        if filtered:
+            pool = filtered
+
+    # Weighted random pick
+    weights = [max(1, int(getattr(l, 'weight', 1) or 1)) for l in pool]
+    total = sum(weights)
+    r = random.randint(1, total)
+    upto = 0
+    for lnk, w in zip(pool, weights):
+        upto += w
+        if upto >= r:
+            return lnk
+    return random.choice(pool)
+
+
+def build_caption(template: str, link_url: str | None, group_name: str | None) -> str:
+    """Replace common placeholders in caption template.
+    Supported: {LINK}, {GROUP}, {DATE}
+    """
+    if not template:
+        return ""
+    result = template
+    if link_url:
+        result = result.replace('{LINK}', link_url)
+    else:
+        result = result.replace('{LINK}', '')
+    if group_name:
+        result = result.replace('{GROUP}', group_name)
+    date_str = datetime.utcnow().strftime('%Y-%m-%d')
+    result = result.replace('{DATE}', date_str)
+    return result

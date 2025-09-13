@@ -11,7 +11,12 @@ from .models import Account, Group, Log
 from .posting import simulated_post, post_to_group_real
 from .playwright_controller import PlaywrightController
 from .config import DRY_RUN, DEFAULT_HEADLESS
-from .selection_logic import choose_caption_for_group, choose_poster_for_group
+from .selection_logic import (
+    choose_caption_for_group,
+    choose_poster_for_group,
+    choose_link_weighted,
+    build_caption,
+)
 
 
 def run_account_job(account_id: int, campaign_config: dict, campaign_id=None):
@@ -31,22 +36,42 @@ def run_account_job(account_id: int, campaign_config: dict, campaign_id=None):
         groups = session.query(Group).filter_by(account_id=account_id, excluded=False).all()
         used_caption_ids = set()
         for g in groups:
+            # choose resources
             caption_obj = choose_caption_for_group(session, used_caption_ids=used_caption_ids)
             poster_obj = choose_poster_for_group(session)
-            caption_text = caption_obj.text if caption_obj else None
+            link_obj = choose_link_weighted(session)
+
+            link_url = link_obj.url if link_obj else None
+            caption_text_template = caption_obj.text if caption_obj else None
+            caption_text = build_caption(caption_text_template or '', link_url, g.name)
             if caption_obj:
                 used_caption_ids.add(caption_obj.id)
 
-            try:
-                if DRY_RUN:
-                    success = simulated_post(page, g.url, caption_text, poster_obj)
-                else:
-                    success = post_to_group_real(page, g.url, caption_text, poster_obj)
-            except Exception as e:
-                logger.exception(f'Exception while posting to group {g.url}: {e}')
-                success = False
+            # retry loop
+            retries = int(campaign_config.get('retries', 1))
+            attempt = 0
+            success = False
+            last_err = None
+            while attempt <= retries:
+                try:
+                    if DRY_RUN:
+                        success = simulated_post(page, g.url, caption_text, poster_obj)
+                    else:
+                        success = post_to_group_real(page, g.url, caption_text, poster_obj)
+                    if success:
+                        break
+                except Exception as e:
+                    last_err = e
+                    logger.exception(f'Exception while posting to group {g.url}: {e}')
+                attempt += 1
+                if attempt <= retries:
+                    backoff = float(campaign_config.get('retry_backoff', 3.0)) * (2 ** (attempt - 1))
+                    time.sleep(backoff)
 
-            log = Log(level='INFO' if success else 'ERROR', account_id=account_id, group_id=g.id, message=f"Posted: {success}", created_at=datetime.datetime.utcnow())
+            message = f"Posted: {success}"
+            if not success and last_err:
+                message += f" err={last_err}"
+            log = Log(level='INFO' if success else 'ERROR', account_id=account_id, group_id=g.id, message=message, created_at=datetime.datetime.utcnow())
             session.add(log)
             if success:
                 g.last_posted_at = datetime.datetime.utcnow()
