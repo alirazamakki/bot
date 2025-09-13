@@ -7,6 +7,7 @@ from PySide6.QtCore import Qt
 from app.db import get_session
 from app.models import Account, Poster, Caption, Link
 from app.models_extra import Proxy
+from app.group_fetch import fetch_groups_for_account
 
 class ResourceManagerWidget(QWidget):
     def __init__(self, parent=None):
@@ -27,9 +28,12 @@ class ResourceManagerWidget(QWidget):
         acc_btn_h = QHBoxLayout()
         self.add_acc_btn = QPushButton('Add Account')
         self.add_acc_btn.clicked.connect(self.add_account)
+        self.fetch_groups_btn = QPushButton('Fetch Groups')
+        self.fetch_groups_btn.clicked.connect(self.fetch_groups_for_selected)
         self.del_acc_btn = QPushButton('Delete')
         self.del_acc_btn.clicked.connect(self.delete_account)
         acc_btn_h.addWidget(self.add_acc_btn)
+        acc_btn_h.addWidget(self.fetch_groups_btn)
         acc_btn_h.addWidget(self.del_acc_btn)
         left_v.addLayout(acc_btn_h)
         layout.addLayout(left_v)
@@ -119,6 +123,14 @@ class ResourceManagerWidget(QWidget):
         self.session.add(acc)
         self.session.commit()
         self._load_all()
+
+    def fetch_groups_for_selected(self):
+        sel = self.accounts_list.currentItem()
+        if not sel:
+            return
+        aid = sel.data(Qt.UserRole)
+        fetch_groups_for_account(aid)
+        QMessageBox.information(self, 'Groups', 'Fetch complete (check Groups tab in future UI).')
 
     def delete_account(self):
         sel = self.accounts_list.currentItem()
