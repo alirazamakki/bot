@@ -9,10 +9,7 @@ DEFAULT_HEADLESS = False
 
 
 
-# === UPDATE: modify worker_pool to call real posting if DRY_RUN is False ===
+# === Worker pool reads DRY_RUN to decide simulated vs real posting ===
 
 
-# We'll add a small wrapper function here to switch between dry run and real function.
-
-
-# (The worker_pool code in the main skeleton will import this config and posting module.)
+# (worker_pool imports this config)

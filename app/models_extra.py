@@ -4,11 +4,12 @@ from .db import Base
 
 
 class Proxy(Base):
-__tablename__ = 'proxies'
-id = Column(Integer, primary_key=True)
-name = Column(String, nullable=True)
-host = Column(String, nullable=False)
-port = Column(Integer, nullable=False)
-username = Column(String, nullable=True)
-password = Column(String, nullable=True)
-type = Column(String, default='http') # http, socks5
+    __tablename__ = 'proxies'
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=True)
+    host = Column(String, nullable=False)
+    port = Column(Integer, nullable=False)
+    username = Column(String, nullable=True)
+    password = Column(String, nullable=True)
+    type = Column(String, default='http')  # http, socks5

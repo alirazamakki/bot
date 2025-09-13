@@ -1,10 +1,11 @@
 # === FILE: app/main.py ===
-from app.db import get_session
+from app.db import get_session, Base, ENGINE
 from app.models import Account, Group
 
 class AppMain:
     def __init__(self):
         # Setup DB session
+        Base.metadata.create_all(ENGINE)
         self.session = get_session()
 
     def list_accounts(self):

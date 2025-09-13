@@ -11,12 +11,12 @@ if session.query(Account).count() == 0:
     acc1 = Account(
         name="sample_acc_1",
         email_or_phone="sample1",
-        profile_path="C:/Users/You/AppData/Local/Google/Chrome/User Data/Profile 1"
+        profile_path="/home/you/.config/google-chrome/Profile 1"
     )
     acc2 = Account(
         name="sample_acc_2",
         email_or_phone="sample2",
-        profile_path="C:/Users/You/AppData/Local/Google/Chrome/User Data/Profile 2"
+        profile_path="/home/you/.config/google-chrome/Profile 2"
     )
 
     session.add_all([acc1, acc2])
