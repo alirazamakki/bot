@@ -1,5 +1,6 @@
 # === FILE: app/models.py ===
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime
+from sqlalchemy import Text
 from sqlalchemy.orm import relationship
 from .db import Base
 
@@ -68,3 +69,28 @@ class Log(Base):
     group_id = Column(Integer, nullable=True)
     message = Column(String, nullable=False)
     created_at = Column(DateTime, nullable=True)
+
+
+class Campaign(Base):
+    __tablename__ = "campaigns"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    status = Column(String, default='pending')
+    config_json = Column(Text, nullable=True)
+
+
+class CampaignTask(Base):
+    __tablename__ = "campaign_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    campaign_id = Column(Integer, ForeignKey("campaigns.id"), nullable=False)
+    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False)
+    poster_id = Column(Integer, ForeignKey("posters.id"), nullable=True)
+    caption_id = Column(Integer, ForeignKey("captions.id"), nullable=True)
+    link_id = Column(Integer, ForeignKey("links.id"), nullable=True)
+    scheduled_time = Column(DateTime, nullable=True)
+    status = Column(String, default='pending')
+    retries_done = Column(Integer, default=0)
+    last_error = Column(Text, nullable=True)
