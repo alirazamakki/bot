@@ -4,9 +4,9 @@ from PySide6.QtWidgets import (
     QListWidgetItem, QLineEdit, QFileDialog, QMessageBox, QInputDialog
 )
 from PySide6.QtCore import Qt
-from .db import get_session
-from .models import Account, Poster, Caption, Link
-from .models_extra import Proxy
+from app.db import get_session
+from app.models import Account, Poster, Caption, Link
+from app.models_extra import Proxy
 
 class ResourceManagerWidget(QWidget):
     def __init__(self, parent=None):
